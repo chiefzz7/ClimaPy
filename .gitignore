@@ -1,0 +1,43 @@
+# Ambientes e segredos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.jks
+*.keystore
+google-services.json
+
+# Python
+.venv/
+.uv-python/
+backend/.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Banco de dados local
+*.db
+*.sqlite
+*.sqlite3
+
+# Frontend / Mobile
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/android/app/build/
+frontend/android/.gradle/
+frontend/ios/App/build/
+frontend/ios/App/Pods/
+
+# Sistema / IDE
+.DS_Store
+Thumbs.db
+*.swp
+.idea/

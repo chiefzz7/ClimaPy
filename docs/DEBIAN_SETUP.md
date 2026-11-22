@@ -90,9 +90,31 @@ Dentro de `backend/`:
 
 ---
 
-## 6. Prévia das Próximas Etapas (Android e iOS no Debian 13)
+## 6. Frontend Web / PWA (Etapa 4)
 
-- **Etapa 4 (Web/PWA)**: usará apenas `Node.js 20+` (`npm`) já instalado.
+No Debian 13, caso o `npm` não venha instalado com o `nodejs`, instale via `apt`:
+
+```bash
+sudo apt update && sudo apt install -y npm
+```
+
+Para instalar dependências, testar e rodar o frontend em desenvolvimento:
+
+```bash
+cd frontend
+npm install
+npm run typecheck
+npm test
+npm run build
+npm run dev
+```
+
+Acesse `http://127.0.0.1:5173` (com o backend `uvicorn` rodando na porta `8000` — o Vite faz proxy automático de `/api` para `127.0.0.1:8000`).
+
+---
+
+## 7. Prévia das Próximas Etapas (Android e iOS no Debian 13)
+
 - **Etapa 5 (Android APK local)**: exigirá `openjdk-17-jdk` + **Android SDK Command-Line Tools** (`sdkmanager` com `platform-tools`, `build-tools` e `platforms;android-34`/`35`).
 - **Etapa 5 (iOS)**: compilar `.ipa` nativo requer **Xcode no macOS**. No Linux, entregaremos:
   1. **PWA instalável no iOS Safari 16.4+** com Web Push funcionando sem Xcode.

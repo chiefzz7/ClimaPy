@@ -50,20 +50,31 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # 3. Gerar chaves locais (Fernet + VAPID) em .env (permissão 0600, ignorado no Git)
 backend/.venv/bin/python backend/scripts/generate_keys.py --write
 
-# 4. Subir a API FastAPI
+# 4. Subir a API FastAPI (Terminal 1)
 cd backend && .venv/bin/uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
+# 5. Subir o Frontend Web/PWA (Terminal 2)
+cd frontend && npm install && npm run dev
 ```
 
-Documentação interativa local: `http://127.0.0.1:8000/docs`
+Documentação interativa local da API: `http://127.0.0.1:8000/docs`  
+Aplicativo Web/PWA local: `http://127.0.0.1:5173`
 
 ### Testes e Auditorias (100% Offline)
 
 ```bash
+# Backend
 cd backend
 .venv/bin/pytest -v
 .venv/bin/ruff check app tests scripts && .venv/bin/ruff format --check app tests scripts
 .venv/bin/mypy app
 .venv/bin/bandit -r app scripts
+
+# Frontend
+cd ../frontend
+npm run typecheck
+npm test
+npm run build
 ```
 
 ---
@@ -78,7 +89,7 @@ cd backend
 1. **Etapa 1** — Pesquisa de APIs gratuitas, arquitetura e documentos base (`CONTEXT.md`, `AGENTS.md`) ✅
 2. **Etapa 2 + 2.5** — Backend Python 3.12 seguro, provedores Open-Meteo/MET Norway/Nominatim, cache TTL, rosa dos ventos, pressão/orvalho/visibilidade, modo compacto e testes ✅
 3. **Etapa 3** — Lembretes sem login e motor de notificações Web Push (VAPID + `APScheduler` + capability token + Fernet + anti-SSRF) ✅
-4. **Etapa 4** — Frontend Web/PWA mobile-first (3 dias + até 16 dias + gráficos horários + favoritos locais)
+4. **Etapa 4** — Frontend Web/PWA mobile-first (3 dias + até 16 dias + gráficos horários + favoritos locais + SW Web Push) ✅
 5. **Etapa 5** — Empacotamento Android (APK) e preparo iOS (Capacitor + GitHub Actions `macos-latest`)
 6. **Etapa 6** — Camada de IA climática em Python (`backend/app/services/ai/`)
 

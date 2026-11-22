@@ -18,6 +18,8 @@ dependencies = [
     "cachetools>=5.5.0,<6.0.0",
     "sqlalchemy[asyncio]>=2.0.35,<3.0.0",
     "aiosqlite>=0.20.0,<1.0.0",
+    "pywebpush>=2.0.0,<3.0.0",
+    "apscheduler>=3.10.4,<4.0.0",
 ]
 
 [project.optional-dependencies]
@@ -51,7 +53,16 @@ warn_unused_ignores = true
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["slowapi", "slowapi.*"]
+module = [
+    "slowapi",
+    "slowapi.*",
+    "pywebpush",
+    "pywebpush.*",
+    "py_vapid",
+    "py_vapid.*",
+    "apscheduler",
+    "apscheduler.*",
+]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

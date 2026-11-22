@@ -15,6 +15,7 @@ from app.api.v1.router import api_v1_router
 from app.core.config import Settings, get_settings
 from app.core.rate_limit import limiter
 from app.core.security import SecurityHeadersMiddleware
+from app.db.base import create_engine_and_sessionmaker, init_db
 from app.providers.base import ProviderError
 from app.providers.met_norway import MetNorwayWeatherProvider
 from app.providers.nominatim import NominatimReverseGeocodingProvider
@@ -24,6 +25,9 @@ from app.providers.open_meteo import (
     OpenMeteoWeatherProvider,
 )
 from app.services.cache_service import CacheService
+from app.services.push_service import WebPushService
+from app.services.reminder_service import ReminderService
+from app.services.scheduler_service import SchedulerService
 from app.services.weather_service import WeatherService
 
 
@@ -34,6 +38,9 @@ def create_app(settings_override: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+        engine, session_factory = create_engine_and_sessionmaker(settings.database_url)
+        await init_db(engine)
+
         timeout = httpx.Timeout(
             connect=5.0,
             read=settings.http_timeout_seconds,
@@ -68,19 +75,60 @@ def create_app(settings_override: Settings | None = None) -> FastAPI:
                 http_client,
                 user_agent=settings.app_user_agent,
             )
-
-            application.state.settings = settings
-            application.state.http_client = http_client
-            application.state.cache_service = cache_service
-            application.state.weather_service = WeatherService(
+            weather_service = WeatherService(
                 primary_provider=primary_weather,
                 fallback_provider=fallback_weather,
                 air_quality_provider=air_quality_provider,
                 cache=cache_service,
             )
+            encryption_key = (
+                settings.data_encryption_key.get_secret_value()
+                if settings.data_encryption_key is not None
+                else None
+            )
+            vapid_private_key = (
+                settings.vapid_private_key.get_secret_value()
+                if settings.vapid_private_key is not None
+                else None
+            )
+            push_service = WebPushService(
+                vapid_public_key=settings.vapid_public_key,
+                vapid_private_key=vapid_private_key,
+                vapid_subject=settings.vapid_subject,
+                timeout_seconds=settings.http_timeout_seconds,
+            )
+            reminder_service = ReminderService(
+                data_encryption_key=encryption_key,
+                weather_service=weather_service,
+                push_service=push_service,
+            )
+            scheduler_service = SchedulerService(
+                session_factory=session_factory,
+                weather_service=weather_service,
+                push_service=push_service,
+                data_encryption_key=encryption_key,
+                poll_seconds=settings.scheduler_poll_seconds,
+            )
+
+            application.state.settings = settings
+            application.state.db_engine = engine
+            application.state.session_factory = session_factory
+            application.state.http_client = http_client
+            application.state.cache_service = cache_service
+            application.state.weather_service = weather_service
             application.state.geocoding_provider = geocoding_provider
             application.state.reverse_geocoding_provider = reverse_provider
-            yield
+            application.state.push_service = push_service
+            application.state.reminder_service = reminder_service
+            application.state.scheduler_service = scheduler_service
+
+            if settings.scheduler_enabled:
+                scheduler_service.start()
+            try:
+                yield
+            finally:
+                scheduler_service.shutdown()
+                await engine.dispose()
 
     is_production = settings.app_env == "production"
     application = FastAPI(

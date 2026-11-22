@@ -4,24 +4,34 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import SecretStr
 
 from app.core.config import Settings
 from app.main import create_app
+from scripts.generate_keys import generate_local_keys
 
 
 @pytest.fixture
-def test_settings() -> Settings:
+def test_settings(tmp_path: Path) -> Settings:
     """Retorna configurações isoladas para execução de testes offline."""
+    keys = generate_local_keys()
     return Settings(
         app_env="testing",
+        database_url=f"sqlite+aiosqlite:///{tmp_path / 'climapy_test.db'}",
         rate_limit_enabled=False,
+        scheduler_enabled=False,
         weather_cache_ttl_seconds=900,
         geocoding_cache_ttl_seconds=86400,
         http_timeout_seconds=5.0,
+        data_encryption_key=SecretStr(keys.data_encryption_key),
+        vapid_public_key=keys.vapid_public_key,
+        vapid_private_key=SecretStr(keys.vapid_private_key),
+        vapid_subject="mailto:test@climapy.local",
     )
 
 

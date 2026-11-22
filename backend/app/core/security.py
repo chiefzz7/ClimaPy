@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import ipaddress
 import secrets
 from urllib.parse import urlparse
 
@@ -21,6 +22,15 @@ ALLOWED_EXTERNAL_HOSTS: frozenset[str] = frozenset(
         "api.met.no",
         "api.weatherapi.com",
         "nominatim.openstreetmap.org",
+    }
+)
+
+ALLOWED_PUSH_BASE_DOMAINS: frozenset[str] = frozenset(
+    {
+        "fcm.googleapis.com",
+        "push.services.mozilla.com",
+        "push.apple.com",
+        "notify.windows.com",
     }
 )
 
@@ -46,6 +56,54 @@ def validate_external_url(url: str) -> str:
         raise ValueError(f"Host externo não autorizado pela allowlist: {hostname!r}")
     if parsed.port not in (None, 443):
         raise ValueError("Porta não autorizada para conexão HTTPS externa.")
+    return url
+
+
+def is_ip_blocked(ip_text: str) -> bool:
+    """Retorna True para endereços privados, loopback, link-local, multicast ou reservados."""
+    try:
+        addr = ipaddress.ip_address(ip_text)
+    except ValueError:
+        return True
+    return bool(
+        addr.is_private
+        or addr.is_loopback
+        or addr.is_link_local
+        or addr.is_multicast
+        or addr.is_reserved
+        or addr.is_unspecified
+    )
+
+
+def validate_push_endpoint(url: str) -> str:
+    """Valida endpoint Web Push contra allowlist de provedores e vetores SSRF."""
+    if not url or len(url) > 2048 or any(ch.isspace() or ord(ch) < 32 for ch in url):
+        raise ValueError("Endpoint Web Push inválido.")
+
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        raise ValueError("Endpoint Web Push deve utilizar HTTPS.")
+    if parsed.username or parsed.password:
+        raise ValueError("Credenciais embutidas no endpoint Web Push não são permitidas.")
+    if parsed.port not in (None, 443):
+        raise ValueError("Porta não autorizada para endpoint Web Push.")
+
+    hostname = (parsed.hostname or "").lower().rstrip(".")
+    if not hostname:
+        raise ValueError("Hostname ausente no endpoint Web Push.")
+
+    try:
+        ipaddress.ip_address(hostname)
+    except ValueError:
+        pass
+    else:
+        raise ValueError("Endereços IP literais não são permitidos em endpoints Web Push.")
+
+    if not any(
+        hostname == domain or hostname.endswith(f".{domain}")
+        for domain in ALLOWED_PUSH_BASE_DOMAINS
+    ):
+        raise ValueError("Provedor de endpoint Web Push não autorizado pela política anti-SSRF.")
     return url
 
 

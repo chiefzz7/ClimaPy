@@ -77,7 +77,7 @@ cd backend
 ### Etapas do Projeto
 1. **Etapa 1** — Pesquisa de APIs gratuitas, arquitetura e documentos base (`CONTEXT.md`, `AGENTS.md`) ✅
 2. **Etapa 2 + 2.5** — Backend Python 3.12 seguro, provedores Open-Meteo/MET Norway/Nominatim, cache TTL, rosa dos ventos, pressão/orvalho/visibilidade, modo compacto e testes ✅
-3. **Etapa 3** — Lembretes sem login e motor de notificações Web Push (VAPID + `APScheduler` + capability token)
+3. **Etapa 3** — Lembretes sem login e motor de notificações Web Push (VAPID + `APScheduler` + capability token + Fernet + anti-SSRF) ✅
 4. **Etapa 4** — Frontend Web/PWA mobile-first (3 dias + até 16 dias + gráficos horários + favoritos locais)
 5. **Etapa 5** — Empacotamento Android (APK) e preparo iOS (Capacitor + GitHub Actions `macos-latest`)
 6. **Etapa 6** — Camada de IA climática em Python (`backend/app/services/ai/`)

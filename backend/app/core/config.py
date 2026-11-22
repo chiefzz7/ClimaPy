@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     rate_limit_default: str = "60/minute"
     rate_limit_geocoding: str = "30/minute"
     rate_limit_reverse: str = "15/minute"
+    rate_limit_reminders: str = "10/minute"
+    rate_limit_push_test: str = "5/minute"
+
+    scheduler_enabled: bool = True
+    scheduler_poll_seconds: int = Field(default=60, ge=10, le=300)
 
     data_encryption_key: SecretStr | None = None
     vapid_public_key: str | None = None
@@ -63,6 +68,16 @@ class Settings(BaseSettings):
         if "*" in origins:
             raise ValueError("Uso de wildcard '*' em ALLOWED_ORIGINS não é permitido.")
         return ",".join(origins)
+
+    @field_validator("vapid_subject")
+    @classmethod
+    def _validate_vapid_subject(cls, value: str) -> str:
+        cleaned = value.strip()
+        if any(ord(ch) < 32 for ch in cleaned) or not (
+            cleaned.startswith("mailto:") or cleaned.startswith("https://")
+        ):
+            raise ValueError("VAPID_SUBJECT deve iniciar com 'mailto:' ou 'https://'.")
+        return cleaned
 
     @property
     def allowed_origins_list(self) -> list[str]:
